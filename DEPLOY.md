@@ -101,6 +101,14 @@ eas build --profile production --platform all       # store builds
 ## 7. Using the Expo skills
 `.claude/skills/` holds the four skills so Claude Code picks them up automatically in this repo. To use them elsewhere, copy the folders to `~/.claude/skills/`. In claude.ai, upload each folder as a zip under Settings → Capabilities → Skills.
 
+## Artisans' own marketplace keys (Profile > Marketplace keys)
+Each seller can connect their **own** Amazon (SP-API) or Flipkart seller account inside the app. The keys are sent once over HTTPS, encrypted on the server (AES-256-GCM, `server/vault.js`) and never returned to the app (it only learns "connected" and the non-secret fields). Listings and order pull-back for that seller then use their keys; sellers without keys fall back to the platform account / mock as before.
+- Set **`CRED_KEY`** on Render (32+ random characters, same generator as `JWT_SECRET`). If unset, `JWT_SECRET` is used. Changing either one makes saved keys unreadable, and sellers must enter them again. Keep it stable and private.
+- Flipkart links are accepted only on `flipkart.net` / `flipkart.com` over https (so the server cannot be pointed at other sites), and redirects are refused.
+- Amazon "Publish live" is off by default (listings are only validated). The seller switches it on when ready.
+- A seller's keys can only create orders for that seller's own items.
+- Still true: neither adapter has run against the live marketplaces. Approved seller accounts are required, and the Flipkart payload is a placeholder.
+
 ## Marketplace sync (Amazon / Flipkart)
 Listing an item with the `amazon`/`flipkart` channels queues a job per channel (`server/sync.js`). A worker runs every 15 s with retries (exponential backoff, 5 attempts). Job states shown in the Items tab: queued, setup pending, validated, live, failed.
 Model: products are listed under **one platform seller account per marketplace** (SKU `SS-<itemId>`). Photos are fetched by the marketplace from `PUBLIC_BASE_URL/media/<id>`.

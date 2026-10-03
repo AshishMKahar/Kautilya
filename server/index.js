@@ -1,7 +1,7 @@
 // Kautilya API. Run: cd server && npm install && npm start   (no API keys needed: AI runs on local models from `npm run models`, with built-in fallbacks; price scraper built in; payments mocked)
 import './env.js';
 import express from 'express'; import helmet from 'helmet'; import rateLimit from 'express-rate-limit'; import jwt from 'jsonwebtoken'; import {z} from 'zod';
-import {openStore} from './store.js'; import {startWorker,SYNC_CHANNELS,mockMarket,importOrders} from './sync.js';
+import {openStore} from './store.js'; import {startWorker,SYNC_CHANNELS,mockMarket,importOrders,adapters} from './sync.js'; import {sealCreds,openCreds} from './vault.js'; import {CHANNELS,normalise,view as credView,BadCreds} from './integrations.js';
 import {checkSecret,sniffImage,toDataUrl,clean} from './security.js'; import {parseUpiQr,UPI_RE} from './bank.js';
 import {makeListing,categories} from './listing.js'; import {suggestPrice} from './pricing.js';
 import {mockGateway,MOCK} from './payments.js'; import {enhancePhoto,analyseImage,hasSharp} from './studio.js'; import {priceModel} from './pricemodel.js'; import {transcribe,aiListing,writerReady,langCodes} from './ai.js'; import {has} from './models.js'; import {seedDemo} from './demo.js'; import {authService,orderService,HttpError,publicProfile,view} from './service.js';
@@ -48,6 +48,23 @@ app.post('/auth/demo',authLim,wrap(async(q,r)=>{ if(!DEMO) throw new HttpError(4
 app.post('/auth/refresh',authLim,wrap(async(q,r)=>{ const {refreshToken}=z.object({refreshToken:S(120)}).strict().parse(q.body); r.json(await A.refresh(refreshToken)); }));
 app.post('/auth/logout',authn,wrap(async(q,r)=>{ await A.logout(q.uid); r.json({ok:true}); }));
 app.get('/me',authn,wrap(async(q,r)=>{ const u=await store.getUser(q.uid); r.json(publicProfile(u)); }));
+
+// ---- marketplace keys: an artisan connects their OWN Amazon / Flipkart seller account. Stored encrypted; the app only ever sees status and non-secret fields. ----
+const credLim=lim(15*6e4,40,'Too many attempts. Try again later'), testLim=lim(6e4,5);
+const chanS=z.enum(CHANNELS);
+const loadCreds=async(uid,ch)=>{ const row=await store.getCred(uid,ch); if(!row) return null; const c=openCreds(row.blob,uid,ch); return c?{creds:c,updated_at:row.updated_at}:null; };
+app.get('/integrations',authn,wrap(async(q,r)=>{ const channels={}; for(const ch of CHANNELS){ const x=await loadCreds(q.uid,ch); channels[ch]=credView(ch,x?.creds,x?.updated_at); } r.json({channels}); }));
+app.post('/integrations/save',authn,credLim,wrap(async(q,r)=>{
+  const b=z.object({channel:chanS,fields:z.record(z.string().max(40),z.union([z.string().max(1300),z.boolean()]))}).strict().parse(q.body);
+  const old=(await loadCreds(q.uid,b.channel))?.creds||null; let merged;
+  try{ merged=normalise(b.channel,b.fields,old); }catch(e){ if(e instanceof BadCreds) throw new HttpError(400,e.message); throw e; }
+  await store.putCred(q.uid,b.channel,sealCreds(merged,q.uid,b.channel)); await store.audit(q.uid,'integration_set',{channel:b.channel});
+  r.json(credView(b.channel,merged,new Date())); }));
+app.post('/integrations/remove',authn,credLim,wrap(async(q,r)=>{
+  const {channel}=z.object({channel:chanS}).strict().parse(q.body); await store.delCred(q.uid,channel); await store.audit(q.uid,'integration_removed',{channel}); r.json(credView(channel,null)); }));
+app.post('/integrations/test',authn,testLim,wrap(async(q,r)=>{
+  const {channel}=z.object({channel:chanS}).strict().parse(q.body); const x=await loadCreds(q.uid,channel); if(!x) throw new HttpError(404,'Save your keys first');
+  r.json(await adapters[channel].check(x.creds)); }));
 
 // ---- listing helper (built in, no AI key): text + category -> bilingual listing + scraped market price ----
 app.get('/ai/categories',authn,(q,r)=>r.json(categories()));

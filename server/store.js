@@ -3,7 +3,7 @@
 const desc=(a,b)=>b.id-a.id;
 const PATCH=['payment_id','payout_id','refund_id','tracking','auto_release_at'];
 export function memoryStore(){
-  const users={},items=[],orders=[],jobs=[],events=[],notes=[],sessions={},chall={},audits=[]; let jid=0,oid=0,eid=0,nid=0;
+  const users={},items=[],orders=[],jobs=[],events=[],notes=[],sessions={},chall={},audits=[],creds={}; let jid=0,oid=0,eid=0,nid=0;
   const stripImg=({image,...i})=>i;
   return {kind:'memory',
     async upsertUser(u){users[u.uid]={...users[u.uid],...u};return users[u.uid];},
@@ -40,7 +40,12 @@ export function memoryStore(){
     async dueJobs(now,limit=10){return jobs.filter(j=>['pending','needs_setup'].includes(j.status)&&j.next_run<=now).slice(0,limit);},
     async updateJob(id,p){Object.assign(jobs.find(j=>j.id===id),p);},
     async jobsForItems(ids){return jobs.filter(j=>ids.includes(j.item_id));},
-    async liveJobs(){return jobs.filter(j=>['done','validated'].includes(j.status));}};
+    async liveJobs(){return jobs.filter(j=>['done','validated'].includes(j.status));},
+    // marketplace keys: only the encrypted text is stored (see vault.js)
+    async putCred(uid,channel,blob){creds[uid+'|'+channel]={uid,channel,blob,updated_at:new Date()};},
+    async getCred(uid,channel){return creds[uid+'|'+channel]||null;},
+    async delCred(uid,channel){delete creds[uid+'|'+channel];},
+    async credUsers(channel){return Object.values(creds).filter(x=>x.channel===channel);}};
 }
 export async function pgStore(pool){
   const q=(t,p)=>pool.query(t,p);
@@ -55,6 +60,7 @@ export async function pgStore(pool){
     CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY, uid TEXT NOT NULL, family TEXT NOT NULL, hash TEXT NOT NULL, exp TIMESTAMPTZ NOT NULL, used BOOLEAN NOT NULL DEFAULT false, revoked BOOLEAN NOT NULL DEFAULT false);
     CREATE TABLE IF NOT EXISTS audit(id SERIAL PRIMARY KEY, uid TEXT, event TEXT NOT NULL, meta JSONB, at TIMESTAMPTZ NOT NULL DEFAULT now());
     CREATE TABLE IF NOT EXISTS sync_jobs(id SERIAL PRIMARY KEY, item_id INT NOT NULL, channel TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', attempts INT NOT NULL DEFAULT 0, external_id TEXT, error TEXT, next_run TIMESTAMPTZ NOT NULL DEFAULT now());
+    CREATE TABLE IF NOT EXISTS integrations(uid TEXT NOT NULL, channel TEXT NOT NULL, blob TEXT NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY(uid,channel));
     ALTER TABLE users ADD COLUMN IF NOT EXISTS bank JSONB; ALTER TABLE users ADD COLUMN IF NOT EXISTS verified BOOLEAN NOT NULL DEFAULT false;
     ALTER TABLE items ADD COLUMN IF NOT EXISTS stock INT NOT NULL DEFAULT 1;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'awaiting_payment'; ALTER TABLE orders ADD COLUMN IF NOT EXISTS escrow BOOLEAN NOT NULL DEFAULT true;
@@ -104,7 +110,11 @@ export async function pgStore(pool){
     async dueJobs(now,limit=10){return (await q("SELECT * FROM sync_jobs WHERE status IN ('pending','needs_setup') AND next_run<=$1 ORDER BY id LIMIT $2",[now,limit])).rows;},
     async updateJob(id,p){const k=Object.keys(p).filter(c=>['status','attempts','external_id','error','next_run'].includes(c));await q(`UPDATE sync_jobs SET ${k.map((c,i)=>`${c}=$${i+2}`).join(',')} WHERE id=$1`,[id,...k.map(c=>p[c])]);},
     async jobsForItems(ids){if(!ids.length) return []; return (await q('SELECT * FROM sync_jobs WHERE item_id = ANY($1::int[])',[ids])).rows;},
-    async liveJobs(){return (await q("SELECT * FROM sync_jobs WHERE status IN ('done','validated')")).rows;}};
+    async liveJobs(){return (await q("SELECT * FROM sync_jobs WHERE status IN ('done','validated')")).rows;},
+    async putCred(uid,channel,blob){await q('INSERT INTO integrations(uid,channel,blob) VALUES($1,$2,$3) ON CONFLICT(uid,channel) DO UPDATE SET blob=EXCLUDED.blob, updated_at=now()',[uid,channel,blob]);},
+    async getCred(uid,channel){return row('SELECT uid,channel,blob,updated_at FROM integrations WHERE uid=$1 AND channel=$2',[uid,channel]);},
+    async delCred(uid,channel){await q('DELETE FROM integrations WHERE uid=$1 AND channel=$2',[uid,channel]);},
+    async credUsers(channel){return (await q('SELECT uid,channel,blob,updated_at FROM integrations WHERE channel=$1 LIMIT 500',[channel])).rows;}};
 }
 export async function openStore(){
   if(!process.env.DATABASE_URL){console.warn('DATABASE_URL not set: using in-memory store (data lost on restart)');return memoryStore();}
