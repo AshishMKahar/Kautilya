@@ -1,0 +1,31 @@
+{
+ "name": "kautilya-server",
+ "type": "module",
+ "private": true,
+ "engines": {
+  "node": ">=20"
+ },
+ "scripts": {
+  "start": "node index.js",
+  "test": "node --test test/*.test.mjs",
+  "models": "node scripts/fetch-models.mjs",
+  "demo": "node scripts/demo.mjs"
+ },
+ "dependencies": {
+  "express": "^4.21.0",
+  "express-rate-limit": "^7.4.0",
+  "helmet": "^8.0.0",
+  "jsonwebtoken": "^9.0.2",
+  "pg": "^8.13.0",
+  "sharp": "^0.34.0",
+  "zod": "^3.23.0"
+ },
+ "devDependencies": {
+  "pg-mem": "^3.0.0"
+ },
+ "optionalDependencies": {
+  "@huggingface/transformers": "^3.7.0",
+  "ffmpeg-static": "^5.2.0",
+  "onnxruntime-node": "^1.21.0"
+ }
+}
