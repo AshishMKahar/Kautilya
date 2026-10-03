@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {Alert,Pressable,ScrollView,Text,TextInput,ActivityIndicator,View} from 'react-native';
 import {Image} from 'expo-image';
-import {CameraView} from 'expo-camera';
+import {CameraView,useCameraPermissions} from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import {AudioModule,RecordingPresets,setAudioModeAsync,useAudioRecorder,useAudioRecorderState} from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -23,6 +23,8 @@ const chip=(on:boolean)=>({paddingVertical:8,paddingHorizontal:14,borderRadius:2
 const Badge=({t,good}:{t:string;good?:boolean})=><Text style={{fontSize:13,fontWeight:'700',color:good===false?c.mute:c.green,backgroundColor:'#fff',paddingVertical:5,paddingHorizontal:10,borderRadius:12,overflow:'hidden'}}>{t}</Text>;
 export default function Sell(){
   const cam=useRef<CameraView>(null); const qc=useQueryClient(); const [camReady,setCamReady]=useState(false); const {t,lang:ui}=useLang();
+  const [camPerm,askCam]=useCameraPermissions();
+  useEffect(()=>{ if(camPerm&&!camPerm.granted&&camPerm.canAskAgain) askCam(); },[camPerm]);
   const [photo,setPhoto]=useState<any>(null); const [enh,setEnh]=useState<any>(null); const [view,setView]=useState<'studio'|'orig'>('studio'); const [L,setL]=useState<any>(null);
   const [text,setText]=useState(''); const [textEn,setTextEn]=useState(''); const [cat,setCat]=useState<string|undefined>(); const [place,setPlace]=useState(''); const [stock,setStock]=useState(1); const [price,setPrice]=useState(''); const [ch,setCh]=useState<string[]>(['app']);
   const [lang,setLang]=useState('hi'); const [demoVoice,setDemoVoice]=useState(false);

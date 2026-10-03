@@ -1,69 +1,69 @@
 {
- "expo": {
-  "name": "Kautilya",
-  "slug": "kautilya",
-  "scheme": "kautilya",
-  "version": "1.0.0",
-  "orientation": "portrait",
-  "userInterfaceStyle": "light",
-  "newArchEnabled": true,
-  "ios": {
-   "bundleIdentifier": "in.kautilya.app",
-   "supportsTablet": false,
-   "infoPlist": {
-    "NSCameraUsageDescription": "Photo aur UPI QR scan ke liye camera chahiye.",
-    "NSMicrophoneUsageDescription": "Apni awaaz mein product ka vivaran bolne ke liye mic chahiye.",
-    "NSPhotoLibraryUsageDescription": "Gallery se product ki photo chunne ke liye."
-   }
-  },
-  "android": {
-   "package": "in.kautilya.app",
-   "permissions": [
-    "CAMERA",
-    "RECORD_AUDIO"
-   ],
-   "allowBackup": false,
-   "adaptiveIcon": {
-    "foregroundImage": "./assets/adaptive-icon.png",
-    "backgroundColor": "#FFFFFF"
-   }
-  },
-  "plugins": [
-   "expo-router",
-   "expo-secure-store",
-   [
-    "expo-camera",
-    {
-     "cameraPermission": "Photo aur QR scan ke liye",
-     "microphonePermission": false,
-     "recordAudioAndroid": false
+  "expo": {
+    "name": "Kautilya",
+    "slug": "kautilya",
+    "scheme": "kautilya",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "in.kautilya.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Photo aur UPI QR scan ke liye camera chahiye.",
+        "NSMicrophoneUsageDescription": "Apni awaaz mein product ka vivaran bolne ke liye mic chahiye.",
+        "NSPhotoLibraryUsageDescription": "Gallery se product ki photo chunne ke liye."
+      }
+    },
+    "android": {
+      "package": "in.kautilya.app",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO"
+      ],
+      "allowBackup": false,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Photo aur QR scan ke liye",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Apni awaaz mein product ka vivaran bolne ke liye mic chahiye."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Gallery se product ki photo chunne ke liye.",
+          "cameraPermission": "Product ki photo lene ke liye camera chahiye."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     }
-   ],
-   [
-    "expo-audio",
-    {
-     "microphonePermission": "Apni awaaz mein product ka vivaran bolne ke liye mic chahiye."
-    }
-   ],
-   [
-    "expo-image-picker",
-    {
-     "photosPermission": "Gallery se product ki photo chunne ke liye.",
-     "cameraPermission": false
-    }
-   ]
-  ],
-  "experiments": {
-   "typedRoutes": true
-  },
-  "icon": "./assets/icon.png",
-  "splash": {
-   "image": "./assets/splash.png",
-   "resizeMode": "contain",
-   "backgroundColor": "#FFFFFF"
-  },
-  "web": {
-   "favicon": "./assets/favicon.png"
   }
- }
 }

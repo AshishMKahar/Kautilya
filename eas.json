@@ -1,1 +1,1 @@
-{"build":{"preview":{"distribution":"internal","android":{"buildType":"apk"},"env":{"EXPO_PUBLIC_API_URL":"https://YOUR-SERVER.onrender.com"}},"production":{"autoIncrement":true,"env":{"EXPO_PUBLIC_API_URL":"https://YOUR-SERVER.onrender.com"}}},"submit":{"production":{}}}
+{"build":{"preview":{"distribution":"internal","android":{"buildType":"apk"},"env":{"EXPO_PUBLIC_API_URL":"https://kautilya-lk2k.onrender.com"}},"production":{"autoIncrement":true,"env":{"EXPO_PUBLIC_API_URL":"https://YOUR-SERVER.onrender.com"}}},"submit":{"production":{}}}
